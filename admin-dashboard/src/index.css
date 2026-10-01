@@ -1,0 +1,225 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #141413;
+  --color-charcoal: #262627;
+  --color-canvas: #f3f0ee;
+  --color-lifted: #fcfbfa;
+  --color-surface: #ffffff;
+  --color-line: #e4dfd9;
+  --color-muted: #696969;
+  --color-dust: #d1cdc7;
+
+  --color-signal: #cf4500;
+  --color-signal-light: #f37338;
+  --color-clay: #9a3a0a;
+  --color-link: #3860be;
+  --color-yellow: #f7a21b;
+  --color-yellow-dark: #d98600;
+
+  /* legacy alias kept so existing accent-* utility usage keeps compiling */
+  --color-accent: #cf4500;
+  --color-accent-dark: #9a3a0a;
+
+  --font-sans: "Poppins", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+
+  --shadow-card: 0 4px 24px rgba(20, 20, 19, 0.04);
+  --shadow-pop: 0 24px 48px rgba(20, 20, 19, 0.08);
+  --shadow-lift: 0 70px 110px rgba(20, 20, 19, 0.12);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+@keyframes customer-review-slide {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes coupon-code-slide {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.customer-review-marquee {
+  animation: customer-review-slide 34s linear infinite;
+  will-change: transform;
+}
+
+.coupon-code-marquee {
+  animation: coupon-code-slide 38s linear infinite;
+  will-change: transform;
+}
+
+.customer-review-marquee:hover {
+  animation-play-state: paused;
+}
+
+.coupon-code-marquee:hover {
+  animation-play-state: paused;
+}
+
+.user-ordering-theme--dark {
+  background: #10140f;
+  color: #f8f2e7;
+}
+
+.user-ordering-theme--dark :where(header, nav, aside, section, div, form) {
+  border-color: rgba(236, 221, 196, 0.18);
+}
+
+.user-ordering-theme--dark :where(.bg-\[\#fbf7ec\], .bg-\[\#fffaf3\], .bg-white, .bg-surface) {
+  background-color: #10140f !important;
+}
+
+.user-ordering-theme--dark :where(.bg-\[\#fbf7ec\/95\], .bg-\[\#fffaf3\/95\], .bg-white\/55) {
+  background-color: rgba(16, 20, 15, 0.94) !important;
+}
+
+.user-ordering-theme--dark :where(.text-\[\#1f2418\], .text-\[\#32302e\], .text-\[\#363331\], .text-ink, .text-black) {
+  color: #f8f2e7 !important;
+}
+
+.user-ordering-theme--dark :where(.text-muted, .text-\[\#74715f\], .text-\[\#757264\], .text-\[\#766f68\], .text-\[\#5f5b4f\]) {
+  color: #c5bba8 !important;
+}
+
+.user-ordering-theme--dark :where(input, textarea, select) {
+  background-color: #171d15 !important;
+  border-color: rgba(236, 221, 196, 0.22) !important;
+  color: #f8f2e7 !important;
+}
+
+.user-ordering-theme--dark :where(input::placeholder, textarea::placeholder) {
+  color: #9b927f !important;
+}
+
+.user-ordering-theme--dark :where(.bg-\[\#f3eadc\], .bg-\[\#f4efe4\], .bg-\[\#f5eadb\], .bg-\[\#fff8ef\], .bg-\[\#fff0df\], .bg-\[\#f4f4f4\], .bg-\[\#f6f6f6\]) {
+  background-color: #1a2217 !important;
+}
+
+@media (min-width: 1024px) {
+  .user-ordering-app--desktop {
+    font-size: 17px;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-[9px]"]:not([class*="lg:text-"])) {
+    font-size: 0.72rem;
+    line-height: 1rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-[10px]"]:not([class*="lg:text-"])) {
+    font-size: 0.8rem;
+    line-height: 1.1rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-[11px]"]:not([class*="lg:text-"])) {
+    font-size: 0.84rem;
+    line-height: 1.15rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-xs"]:not([class*="lg:text-"])) {
+    font-size: 0.9rem;
+    line-height: 1.25rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-[13px]"]:not([class*="lg:text-"])) {
+    font-size: 1rem;
+    line-height: 1.45rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-sm"]:not([class*="lg:text-"])) {
+    font-size: 1.02rem;
+    line-height: 1.55rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-[15px]"]:not([class*="lg:text-"])) {
+    font-size: 1.08rem;
+    line-height: 1.65rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-base"]:not([class*="lg:text-"])) {
+    font-size: 1.14rem;
+    line-height: 1.7rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-lg"]:not([class*="lg:text-"])) {
+    font-size: 1.32rem;
+    line-height: 1.9rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-xl"]:not([class*="lg:text-"])) {
+    font-size: 1.58rem;
+    line-height: 2.05rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-2xl"]:not([class*="lg:text-"])) {
+    font-size: 1.95rem;
+    line-height: 2.35rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-3xl"]:not([class*="lg:text-"])) {
+    font-size: 2.45rem;
+    line-height: 2.85rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .user-ordering-app--desktop {
+    font-size: 18px;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-sm"]:not([class*="lg:text-"])) {
+    font-size: 1.08rem;
+    line-height: 1.65rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-base"]:not([class*="lg:text-"])) {
+    font-size: 1.2rem;
+    line-height: 1.8rem;
+  }
+
+  .user-ordering-app--desktop :where([class~="text-lg"]:not([class*="lg:text-"])) {
+    font-size: 1.4rem;
+    line-height: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customer-review-marquee,
+  .coupon-code-marquee {
+    animation: none;
+  }
+}

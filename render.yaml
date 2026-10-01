@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: lakshmikaipakkuvam
+    runtime: node
+    plan: free
+    buildCommand: npm --prefix api ci && npm --prefix admin-dashboard ci --include=dev && npm --prefix admin-dashboard run build
+    startCommand: npm --prefix api start
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_URL
+        value: /api
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://lakshmikaipakkuvam.com,https://www.lakshmikaipakkuvam.com

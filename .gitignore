@@ -1,0 +1,17 @@
+**/node_modules/
+**/dist/
+**/.env
+**/.env.*
+!**/.env.example
+!/admin-dashboard/.env.production
+**/*-debug.log
+.firebase/
+.vercel/
+.claude/
+.codex/
+.aws/
+*.log
+*.pem
+*.key
+supabase/.temp/
+supabase/.branches/
