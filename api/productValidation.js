@@ -67,8 +67,8 @@ export function validatePublishedProduct(payload) {
     details.weightQty = 'Quantity is required.'
   }
 
-  if (!['gram', 'kg'].includes(payload.weightUnit)) {
-    details.weightUnit = 'Weight unit is required and must be gram or kg.'
+  if (!['gram', 'kg', 'ml'].includes(payload.weightUnit)) {
+    details.weightUnit = 'Quantity unit is required and must be gram, kg, or ml.'
   }
 
   if (!hasText(payload.description)) {

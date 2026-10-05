@@ -323,6 +323,7 @@ function WeightUnitRadio({ value, onChange }) {
       {[
         { value: 'gram', label: 'gram' },
         { value: 'kg', label: 'Kg' },
+        { value: 'ml', label: 'ml' },
       ].map((unit) => {
         const active = value === unit.value
 
@@ -401,7 +402,7 @@ function formatQuantity(product) {
     return '-'
   }
 
-  return `${quantity} ${product.weightUnit === 'kg' ? 'Kg' : 'gram'}`
+  return `${quantity} ${product.weightUnit === 'kg' ? 'Kg' : product.weightUnit}`
 }
 
 function ProductsTable({

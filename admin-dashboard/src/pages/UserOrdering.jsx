@@ -925,7 +925,7 @@ export default function UserOrdering() {
       return ''
     }
 
-    return `${quantity} ${product.weightUnit === 'kg' ? 'Kg' : 'gram'}`
+    return `${quantity} ${product.weightUnit === 'kg' ? 'Kg' : product.weightUnit}`
   }
 
   function getCategoryLabel(product) {
@@ -1559,7 +1559,8 @@ export default function UserOrdering() {
   }
 
   function getWhatsappLink(orderNumber) {
-    const contactNumber = getContactNumber().replace(/\D/g, '')
+    const digits = getContactNumber().replace(/\D/g, '')
+    const contactNumber = digits.length === 10 ? `91${digits}` : digits
 
     if (!contactNumber) {
       return ''

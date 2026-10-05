@@ -62,7 +62,7 @@ function toProductRow(payload) {
     product_name: payload.productName,
     weight_qty_float: toNumberOrNull(payload.weightQtyFloat) ?? fallbackQuantity,
     weight_qty_integer: toIntegerOrNull(payload.weightQtyInteger) ?? (Number.isInteger(fallbackQuantity) ? fallbackQuantity : null),
-    weight_unit: payload.weightUnit === 'kg' || payload.weightUnit === 'gram' ? payload.weightUnit : null,
+    weight_unit: ['kg', 'gram', 'ml'].includes(payload.weightUnit) ? payload.weightUnit : null,
     stock_number: toIntegerOrNull(payload.stockNumber),
     description: payload.description ?? null,
     ingredient: payload.ingredient ?? null,

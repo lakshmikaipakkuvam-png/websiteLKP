@@ -76,7 +76,7 @@ function formatQuantity(product) {
     return null
   }
 
-  return `${quantity} ${product.weight_unit === 'kg' ? 'Kg' : 'gram'}`
+  return `${quantity} ${product.weight_unit === 'kg' ? 'Kg' : product.weight_unit}`
 }
 
 function getProductPrice(product) {
