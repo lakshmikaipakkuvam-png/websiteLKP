@@ -319,7 +319,7 @@ function SubcategoryDropdown({ subcategories, value, onChange, onDelete, disable
 
 function WeightUnitRadio({ value, onChange }) {
   return (
-    <div className="flex h-[52px] items-center gap-5">
+    <div className="flex min-h-[52px] flex-wrap items-center gap-x-5 gap-y-2">
       {[
         { value: 'gram', label: 'gram' },
         { value: 'kg', label: 'Kg' },
@@ -328,7 +328,7 @@ function WeightUnitRadio({ value, onChange }) {
         const active = value === unit.value
 
         return (
-          <label key={unit.value} className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-ink sm:text-base">
+          <label key={unit.value} className="flex shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap text-sm font-semibold text-ink sm:text-base">
             <input
               type="radio"
               name="weightUnit"
@@ -1753,9 +1753,9 @@ export default function CreateProduct() {
           </Field>
 
           <Field label="Weight / quantity" hint="per unit" required>
-            <div className="grid grid-cols-[1fr_130px] gap-5">
-              <input name="weightQty" type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" defaultValue={editingProduct?.weightQtyFloat ?? editingProduct?.weightQtyInteger ?? ''} placeholder="e.g. 500" className={inputClass} />
-              <div>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
+              <input name="weightQty" type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" defaultValue={editingProduct?.weightQtyFloat ?? editingProduct?.weightQtyInteger ?? ''} placeholder="e.g. 500" className={`${inputClass} min-w-0 flex-[1_1_8rem]`} />
+              <div className="min-w-0 max-w-full flex-[0_1_auto]">
                 <WeightUnitRadio value={weightUnit} onChange={setWeightUnit} />
               </div>
             </div>
