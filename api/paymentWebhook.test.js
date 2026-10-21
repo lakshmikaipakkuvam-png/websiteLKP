@@ -7,10 +7,11 @@ import { createPaymentWebhook } from './paymentWebhook.js'
 test('webhook requires raw-body HMAC and account binding; retries provider failures', async (t) => {
   let calls = 0
   let fail = false
+  const logs = []
   const app = express()
   app.use('/hook', createPaymentWebhook({ reconcilePayment: async (id) => {
     assert.equal(id, 'pay_123'); calls += 1; if (fail) throw new Error('temporary')
-  } }, { RAZORPAY_WEBHOOK_SECRET: 'test-secret', RAZORPAY_ACCOUNT_ID: 'acc_owner' }))
+  } }, { RAZORPAY_WEBHOOK_SECRET: 'test-secret', RAZORPAY_ACCOUNT_ID: 'acc_owner' }, (entry) => logs.push(entry)))
   const server = app.listen(0, '127.0.0.1')
   await new Promise((resolve) => server.once('listening', resolve))
   t.after(() => new Promise((resolve) => { server.close(resolve); server.closeAllConnections() }))
@@ -29,4 +30,17 @@ test('webhook requires raw-body HMAC and account binding; retries provider failu
   assert.equal(calls, 2) // settlement is idempotent in the database, not an in-memory replay cache
   fail = true
   assert.equal((await send(body)).status, 503)
+  assert.deepEqual(logs.map(({ status, outcome }) => ({ status, outcome })), [
+    { status: 400, outcome: 'signature_invalid' },
+    { status: 400, outcome: 'signature_invalid' },
+    { status: 400, outcome: 'account_mismatch' },
+    { status: 200, outcome: 'reconciled' },
+    { status: 200, outcome: 'reconciled' },
+    { status: 503, outcome: 'reconciliation_retry' },
+  ])
+  assert.equal(logs[3].event, 'payment.captured')
+  const serialized = JSON.stringify(logs)
+  for (const privateValue of ['test-secret', 'acc_owner', 'acc_attacker', 'pay_123', sign(body), 'temporary']) {
+    assert.equal(serialized.includes(privateValue), false)
+  }
 })

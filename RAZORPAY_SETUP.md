@@ -34,6 +34,7 @@ LIVE_PAYMENTS_ENABLED: false until the deployed test-mode acceptance checks pass
 CORS_ORIGIN: https://lakshmikaipakkuvam.com,https://www.lakshmikaipakkuvam.com
 
 Webhook URL: https://lakshmikaipakkuvam.com/api/webhooks/razorpay
+To verify delivery when Razorpay does not show a delivery-history view, open Render service Logs and search for `razorpay_webhook` after a new test checkout. Successful processing logs `status:200`, `event:payment.captured` or `event:order.paid`, and `outcome:reconciled`. A 200 with `event_ignored` or `payment_ignored` does not confirm settlement. Failure labels distinguish `configuration_missing`, `signature_invalid`, `account_mismatch`, and `reconciliation_retry`. These logs exclude payloads, signatures, payment IDs, account IDs, and customer details. Historical deliveries before this logging release are not available in these application logs.
 During rotation, RAZORPAY_WEBHOOK_PREVIOUS_SECRET can temporarily validate retries signed with the old secret. Remove it after the retry window.
 Enable automatic payment capture in Razorpay. Authorized-only payments cannot release an order. Use separate test/live webhook secrets and switch both API keys together. Old test orders cannot be paid with live keys; create a fresh order after switching. Rotate the previously shared test secret.
 
