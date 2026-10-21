@@ -25,7 +25,7 @@ The production Express server serves the built storefront and preserves `/api` r
 
 - Admin screens and privileged API routes have no authentication or authorization. Protect the backend as well as the UI before a public shop launch.
 - Order lookup by phone does not verify customer ownership. Restrict access to customer order information.
-- Checkout calls `/api/payments/test-success`, which records success without collecting money. A real shop needs a payment provider and server-side payment verification; a preview should stay access-restricted.
+- Checkout now uses Razorpay Standard Checkout with server-side signature, amount, and capture checks. Configure the backend Razorpay environment values in Render and complete test payments before switching to approved live keys. See `RAZORPAY_SETUP.md` for setup and reconciliation limitations.
 - There is no Firebase project selected or hosting deployment created for this app.
 
 ## Hosting choices

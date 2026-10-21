@@ -20,3 +20,9 @@ services:
         sync: false
       - key: CORS_ORIGIN
         value: https://lakshmikaipakkuvam.com,https://www.lakshmikaipakkuvam.com
+      - key: ADMIN_EMAIL
+        value: lakshmikaipakkuvam@gmail.com
+      - key: ADMIN_USER_IDS
+        value: 5569f562-3a8f-4a3a-b305-a84a9330f2bc
+      - key: LIVE_PAYMENTS_ENABLED
+        value: "false"

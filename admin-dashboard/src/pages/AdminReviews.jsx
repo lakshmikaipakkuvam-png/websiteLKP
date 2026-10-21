@@ -1,8 +1,9 @@
+import { adminFetch as fetch, ADMIN_API_URL } from '../adminApi'
 import { useEffect, useState } from 'react'
 import { ImagePlus, Star, Trash2 } from 'lucide-react'
 import AppLoader from '../components/AppLoader'
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:4000/api'
+const API_URL = ADMIN_API_URL
 const inputClass = 'w-full border-0 border-b-2 border-line bg-transparent px-0 py-3 text-base text-ink placeholder:text-dust focus:border-ink focus:outline-none transition-colors sm:text-lg'
 
 export default function AdminReviews() {

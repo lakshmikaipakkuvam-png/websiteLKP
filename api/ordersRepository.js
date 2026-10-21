@@ -131,6 +131,8 @@ function toOrder(row, items = []) {
     discountAmount: row.discount_amount ?? 0,
     grandTotalAmount: row.grand_total_amount ?? row.subtotal_amount,
     status: row.status,
+    paymentState: row.payment_state,
+    paymentMode: row.payment_mode,
     trackingId: row.tracking_id,
     customerId: row.customer_id,
     customer: row.customers ? toCustomer(row.customers) : null,
@@ -173,9 +175,10 @@ function toPayment(row) {
     provider: row.provider,
     providerOrderId: row.provider_order_id,
     providerPaymentId: row.provider_payment_id,
-    providerSignatureId: row.provider_signature_id,
     amount: row.amount,
     status: row.status,
+    mode: row.payment_mode,
+    refundedAmountPaise: Number(row.refunded_amount_paise ?? 0),
   }
 }
 
@@ -250,16 +253,23 @@ async function upsertCustomer(payload) {
 
   const { data, error } = await supabase
     .from('customers')
-    .upsert(customerRow, { onConflict: 'phone_number' })
+    .upsert(customerRow, { onConflict: 'phone_number', ignoreDuplicates: true })
     .select()
-    .single()
+    .maybeSingle()
 
   throwIfError(error)
-  return data
+  if (data) return data
+  // An unverified phone number must not overwrite or disclose another customer's profile.
+  const { data: existing, error: lookupError } = await supabase.from('customers')
+    .select('id').eq('phone_number', customerRow.phone_number).single()
+  throwIfError(lookupError)
+  return { ...customerRow, id: existing.id }
 }
 
-export async function createOrder(payload) {
+export async function createOrder(payload, ownerSessionHash) {
+  if (!ownerSessionHash) throw createOrderError('A private checkout session is required.', undefined, 403)
   const mergedItems = mergeOrderItems(payload.items)
+  if (mergedItems.some((item) => !Number.isSafeInteger(item.quantity) || item.quantity > 100)) throw createOrderError('Maximum quantity per item is 100.')
   const productIds = mergedItems.filter((item) => item.type === 'product').map((item) => item.productId)
   const comboOfferIds = mergedItems.filter((item) => item.type === 'combo').map((item) => item.comboOfferId)
 
@@ -289,7 +299,7 @@ export async function createOrder(payload) {
     if (item.type === 'combo') {
       const comboOffer = comboOffersById.get(item.comboOfferId)
 
-      if (!comboOffer || comboOffer.draft || !comboOffer.active || !Number.isInteger(comboOffer.combo_price)) {
+      if (!comboOffer || comboOffer.draft || !comboOffer.active || !Number.isSafeInteger(comboOffer.combo_price) || comboOffer.combo_price < 0) {
         unavailableItems.push(item.comboOfferId)
         return null
       }
@@ -357,12 +367,14 @@ export async function createOrder(payload) {
   const deliveryCharge = hasPaidDeliveryItems ? calculateDeliveryCharge(profile, payload) : 0
   const { discountCode, discountAmount } = calculateDiscount(profile, payload, subtotalAmount)
   const grandTotalAmount = Math.max(subtotalAmount + deliveryCharge - discountAmount, 0)
+  if (!Number.isSafeInteger(grandTotalAmount) || grandTotalAmount < 1 || grandTotalAmount > 100000) throw createOrderError('Order total must be between Rs. 1 and Rs. 100,000.')
 
   const customer = await upsertCustomer(payload)
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
+      owner_session_hash: ownerSessionHash,
       customer_id: customer.id,
       customer_name: normalizeText(payload.customerName),
       phone_number: normalizePhoneNumber(payload.phoneNumber),
@@ -430,7 +442,8 @@ export async function fetchOrders() {
   ))
 }
 
-export async function fetchOrdersByCustomerPhone(phoneNumber) {
+export async function fetchOrdersByCustomerPhone(phoneNumber, ownerSessionHash) {
+  if (!ownerSessionHash) return []
   const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber)
 
   const { data, error } = await supabase
@@ -443,13 +456,14 @@ export async function fetchOrdersByCustomerPhone(phoneNumber) {
       order_items (*)
     `)
     .or(`phone_number.eq.${normalizedPhoneNumber},whatsapp_number.eq.${normalizedPhoneNumber}`)
+    .eq('owner_session_hash', ownerSessionHash)
     .order('created_at', { ascending: false })
     .order('created_at', { referencedTable: 'order_items', ascending: true })
 
   throwIfError(error)
 
   return data.map((order) => toOrder(
-    order,
+    { ...order, customers: null },
     (order.order_items ?? []).map(toOrderItem),
   ))
 }
@@ -477,6 +491,7 @@ export async function fetchOrderById(id) {
 }
 
 export async function updateOrderStatus(id, status) {
+  if (['preparing', 'shipped', 'delivered'].includes(status)) await requireFulfillable(id)
   const { data, error } = await supabase
     .from('orders')
     .update({ status })
@@ -512,6 +527,7 @@ export async function updateOrderTrackingId(id, trackingId) {
   const normalizedTrackingId = typeof trackingId === 'string' && trackingId.trim()
     ? trackingId.trim()
     : null
+  if (normalizedTrackingId) await requireFulfillable(id)
 
   const { data, error } = await supabase
     .from('orders')
@@ -532,4 +548,12 @@ export async function updateOrderTrackingId(id, trackingId) {
 
   throwIfError(error)
   return toOrder(data, (data.order_items ?? []).map(toOrderItem))
+}
+
+async function requireFulfillable(id) {
+  const { data, error } = await supabase.from('orders').select('payment_state, payment_mode').eq('id', id).single()
+  throwIfError(error)
+  if (data.payment_state !== 'paid' || data.payment_mode !== 'live') {
+    throw createOrderError('A captured live payment is required before fulfilment.', undefined, 409)
+  }
 }

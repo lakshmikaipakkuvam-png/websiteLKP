@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { loadRazorpay, openRazorpayCheckout, paymentRequest, verifyCheckoutPayment } from '../razorpayCheckout'
 import { CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Home, ListFilter, Maximize2, Minus, Moon, PackageCheck, Plus, Share2, Star, Sun, Tag, Trash2, X } from 'lucide-react'
 import { IconSearch, IconShoppingBag } from '../components/icons'
 import bannerImageSrc from '../../images/Banner1.png'
@@ -12,11 +13,21 @@ import founderImageSrc from '../../images/IMG_2566.PNG'
 import indianStatesDistricts from '../data/indian-states-districts.json'
 
 const BRAND_LOGO_SRC = '/brand-logo.jpg'
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:4000/api'
+const API_URL = '/api'
 const CART_STORAGE_KEY = 'lkp_guest_cart'
 const LAST_DELIVERY_STORAGE_KEY = 'lkp_last_delivery'
 const CUSTOMER_PHONE_STORAGE_KEY = 'lkp_customer_phone'
 const THEME_STORAGE_KEY = 'lkp_theme_mode'
+const PENDING_CHECKOUT_KEY = 'lkp_pending_razorpay_checkout'
+
+function readPendingCheckout() {
+  try {
+    const pending = JSON.parse(sessionStorage.getItem(PENDING_CHECKOUT_KEY) ?? 'null')
+    return pending?.order?.id && typeof pending.payloadKey === 'string' ? pending : null
+  } catch {
+    return null
+  }
+}
 const SOCIAL_ICON_URLS = {
   whatsapp: 'https://cdn.simpleicons.org/whatsapp/25D366',
   instagram: 'https://cdn.simpleicons.org/instagram/E4405F',
@@ -433,6 +444,8 @@ export default function UserOrdering() {
   const [orderErrors, setOrderErrors] = useState({})
   const [discountStatus, setDiscountStatus] = useState('')
   const [orderSubmitting, setOrderSubmitting] = useState(false)
+  const checkoutBusy = useRef(false)
+  const [pendingCheckout, setPendingCheckout] = useState(readPendingCheckout)
   const [placedOrder, setPlacedOrder] = useState(null)
   const [feedbackRating, setFeedbackRating] = useState(5)
   const [feedbackMessage, setFeedbackMessage] = useState('')
@@ -1855,10 +1868,12 @@ export default function UserOrdering() {
     return details
   }
 
-  async function submitOrder(event) {
+  async function submitOrder(event, reconcileOnly = false) {
     event.preventDefault()
 
-    const validationErrors = validateOrderForm()
+    if (checkoutBusy.current) return
+
+    const validationErrors = pendingCheckout?.response || reconcileOnly ? {} : validateOrderForm()
 
     if (Object.keys(validationErrors).length > 0) {
       setOrderErrors(validationErrors)
@@ -1866,58 +1881,68 @@ export default function UserOrdering() {
     }
 
     setOrderSubmitting(true)
+    checkoutBusy.current = true
     setOrderErrors({})
 
     try {
-      const response = await fetch(`${API_URL}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...orderForm,
-          items: cartItems.map((item) => (
-            item.type === 'combo'
-              ? { type: 'combo', comboOfferId: item.comboOffer.id, quantity: item.quantity }
-              : { type: 'product', productId: item.product.id, quantity: item.quantity }
-          )),
-        }),
-      })
-      const result = await response.json()
-
-      if (!response.ok) {
-        const message = result.error ?? 'Order could not be placed.'
-        setOrderErrors({ form: message, ...(result.details ?? {}) })
-        return
+      const payload = {
+        ...orderForm,
+        items: cartItems.map((item) => (
+          item.type === 'combo'
+            ? { type: 'combo', comboOfferId: item.comboOffer.id, quantity: item.quantity }
+            : { type: 'product', productId: item.product.id, quantity: item.quantity }
+        )),
+      }
+      const payloadKey = JSON.stringify(payload)
+      let pending = pendingCheckout
+      const remember = (value) => {
+        setPendingCheckout(value)
+        try { sessionStorage.setItem(PENDING_CHECKOUT_KEY, JSON.stringify(value)) } catch { /* State still supports retries. */ }
       }
 
-      const paymentResponse = await fetch(`${API_URL}/payments/test-success`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: result.order.id }),
-      })
-      const paymentResult = await paymentResponse.json()
-
-      if (!paymentResponse.ok) {
-        const message = paymentResult.error ?? 'Test payment could not be completed.'
-        setOrderErrors({ form: message, ...(paymentResult.details ?? {}) })
-        return
+      if (!pending?.response && !reconcileOnly) {
+        // Load Checkout before creating an order; blocked scripts must not
+        // leave unnecessary orders behind.
+        const Razorpay = await loadRazorpay()
+        if (!pending || pending.payloadKey !== payloadKey) {
+          const result = await paymentRequest(API_URL, '/orders', payload)
+          pending = { order: result.order, payloadKey, delivery: { ...orderForm } }
+          remember(pending)
+        }
+        const paymentOrder = await paymentRequest(API_URL, '/create-order', { orderId: pending.order.id })
+        const response = await openRazorpayCheckout(Razorpay, paymentOrder, pending.delivery)
+        pending = { ...pending, response }
+        // Save before verification so network errors/reloads retry confirmation,
+        // never collect a second payment.
+        remember(pending)
       }
-
-      writeStoredDeliveryAddress(orderForm)
-      writeStoredCustomerPhone(orderForm.phoneNumber)
-      setMyOrdersPhone(normalizePhoneInput(orderForm.phoneNumber))
-      setMyOrders([{ ...result.order, payment: paymentResult.payment }])
+      if (!pending?.order?.id) throw new Error('No pending payment was found in this tab.')
+      const paymentResult = reconcileOnly
+        ? await paymentRequest(API_URL, '/payment-status', { orderId: pending.order.id })
+        : await verifyCheckoutPayment(API_URL, pending.order.id, pending.response)
+      if (!paymentResult.success || !paymentResult.payment) throw new Error('Payment is not confirmed or needs owner review. If money was deducted, do not pay again; contact the shop.')
+      const paidOrder = { ...pending.order, payment: paymentResult.payment }
+      writeStoredDeliveryAddress(pending.delivery)
+      writeStoredCustomerPhone(pending.delivery.phoneNumber)
+      setMyOrdersPhone(normalizePhoneInput(pending.delivery.phoneNumber))
+      setMyOrders([paidOrder])
       setLastDeliveryAddress(readStoredDeliveryAddress())
-      setPlacedOrder({ ...result.order, payment: paymentResult.payment })
-      setCartItems([])
-      setOrderForm(EMPTY_ORDER_FORM)
+      setPlacedOrder(paidOrder)
+      if (pending.payloadKey === payloadKey) {
+        setCartItems([])
+        setOrderForm(EMPTY_ORDER_FORM)
+      }
+      setPendingCheckout(null)
+      try { sessionStorage.removeItem(PENDING_CHECKOUT_KEY) } catch { /* Optional storage. */ }
       setFeedbackRating(5)
       setFeedbackMessage('')
       setFeedbackStatus('')
       setFeedbackError('')
-    } catch {
-      setOrderErrors({ form: 'Order could not be placed. Please try again.' })
+    } catch (error) {
+      setOrderErrors({ form: error.message ?? 'Order could not be placed. Please try again.', ...(error.details ?? {}) })
     } finally {
       setOrderSubmitting(false)
+      checkoutBusy.current = false
     }
   }
 
@@ -3247,10 +3272,19 @@ export default function UserOrdering() {
 
                 <section className="mt-8">
                   <h2 className="text-xl font-semibold text-black md:text-2xl">Payment</h2>
-                  <p className="mt-2 text-base font-medium text-[#69717c]">All transactions are secure and encrypted.</p>
+                  <p className="mt-2 text-base font-medium text-[#69717c]">Payment details are handled by Razorpay.</p>
                   <p className="mt-3 text-base font-medium leading-7 text-black">
-                    Test payment is enabled for quick checkout. A successful payment ID will be generated after you tap Pay now.
+                    Pay securely through Razorpay. Your order is marked paid only after payment confirmation.
                   </p>
+                  {pendingCheckout?.order?.id && <button type="button" onClick={(event) => submitOrder(event, true)} disabled={orderSubmitting} className="mt-3 font-bold underline disabled:opacity-50">Check payment status</button>}
+                  {pendingCheckout?.response ? (
+                    <div className="mt-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+                      <p>Your payment needs confirmation. Do not pay again.</p>
+                      <button type="button" onClick={submitOrder} disabled={orderSubmitting} className="mt-2 font-bold underline disabled:opacity-50">
+                        {orderSubmitting ? 'Verifying payment…' : 'Retry payment verification'}
+                      </button>
+                    </div>
+                  ) : null}
                 </section>
 
                 <section className="mt-8">
@@ -3363,10 +3397,10 @@ export default function UserOrdering() {
 
                 <button
                   type="submit"
-                  disabled={orderSubmitting || cartItems.length === 0}
+                  disabled={orderSubmitting || (cartItems.length === 0 && !pendingCheckout?.response)}
                   className="mt-9 h-[58px] w-full rounded-2xl bg-signal px-6 text-lg font-bold text-white transition-colors hover:bg-clay disabled:cursor-not-allowed disabled:bg-muted"
                 >
-                  {orderSubmitting ? 'Placing order...' : 'Pay now'}
+                  {orderSubmitting ? 'Processing payment...' : pendingCheckout?.response ? 'Verify payment' : 'Pay now'}
                 </button>
 
                 <div className="mt-14 flex flex-wrap gap-x-5 gap-y-2 border-t border-[#dedede] pt-6 text-sm font-medium text-signal underline underline-offset-4">

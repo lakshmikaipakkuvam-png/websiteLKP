@@ -1,7 +1,8 @@
+import { adminFetch as fetch, ADMIN_API_URL } from '../adminApi'
 import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, ChevronLeft, ChevronRight, MessageCircle, PackageCheck, Phone, RefreshCcw } from 'lucide-react'
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:4000/api'
+const API_URL = ADMIN_API_URL
 
 const STATUS_OPTIONS = [
   { value: 'confirmed', label: 'Confirmed' },
@@ -56,7 +57,8 @@ function formatPaymentLabel(payment) {
   if (!payment) {
     return 'Payment pending'
   }
-
+  if (payment.refundedAmountPaise > 0) return 'Refunded — review required'
+  if (payment.mode !== 'live') return payment.mode === 'test' ? 'Test payment — do not fulfil' : 'Legacy payment — review required'
   return payment.status === 'success' ? 'Paid' : payment.status
 }
 
@@ -384,7 +386,7 @@ export default function Orders() {
                   className="mt-2 h-12 w-full border border-line bg-lifted px-3 text-sm font-extrabold text-ink outline-none focus:border-ink disabled:opacity-60"
                 >
                   {STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
+                    <option key={option.value} value={option.value} disabled={['preparing', 'shipped', 'delivered'].includes(option.value) && (selectedOrder.paymentState !== 'paid' || selectedOrder.paymentMode !== 'live')}>{option.label}</option>
                   ))}
                 </select>
                 {statusUpdating === selectedOrder.id ? (
@@ -676,7 +678,7 @@ export default function Orders() {
                     className="mt-2 h-12 w-full border border-line bg-lifted px-3 text-sm font-extrabold text-ink outline-none focus:border-ink disabled:opacity-60"
                   >
                     {STATUS_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
+                      <option key={option.value} value={option.value} disabled={['preparing', 'shipped', 'delivered'].includes(option.value) && (selectedOrder.paymentState !== 'paid' || selectedOrder.paymentMode !== 'live')}>{option.label}</option>
                     ))}
                   </select>
                   {statusUpdating === selectedOrder.id ? (

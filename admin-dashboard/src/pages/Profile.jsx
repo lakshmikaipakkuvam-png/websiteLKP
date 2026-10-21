@@ -1,8 +1,9 @@
+import { adminFetch as fetch, ADMIN_API_URL } from '../adminApi'
 import { useEffect, useState } from 'react'
 
 const inputClass =
   'w-full border-0 border-b-2 border-line bg-transparent px-0 py-3 text-base text-ink placeholder:text-dust focus:border-ink focus:outline-none transition-colors sm:text-lg'
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:4000/api'
+const API_URL = ADMIN_API_URL
 const EMPTY_PROFILE = {
   name: '',
   number: '',

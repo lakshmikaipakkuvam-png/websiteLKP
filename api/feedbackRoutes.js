@@ -8,6 +8,7 @@ import {
   updateAdminCustomerReviewActive,
 } from './feedbackRepository.js'
 import { validateAdminCustomerReview, validateFeedbackReview } from './feedbackValidation.js'
+import { requireOwnedOrder } from './orderOwnership.js'
 
 export const feedbackRouter = Router()
 
@@ -23,6 +24,7 @@ feedbackRouter.get('/feedback-reviews/public', async (_req, res, next) => {
 feedbackRouter.post('/feedback-reviews', async (req, res, next) => {
   try {
     validateFeedbackReview(req.body)
+    await requireOwnedOrder(req.body.orderId, req.customerSessionHash)
 
     const feedback = await createFeedbackReview(req.body)
     res.status(201).json({ feedback })

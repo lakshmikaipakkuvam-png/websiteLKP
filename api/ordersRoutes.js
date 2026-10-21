@@ -22,7 +22,7 @@ ordersRouter.get('/orders/customer', async (req, res, next) => {
       return
     }
 
-    const orders = await fetchOrdersByCustomerPhone(phoneNumber)
+    const orders = await fetchOrdersByCustomerPhone(phoneNumber, req.customerSessionHash)
     res.json({ orders })
   } catch (error) {
     next(error)
@@ -38,7 +38,7 @@ ordersRouter.get('/customer-orders', async (req, res, next) => {
       return
     }
 
-    const orders = await fetchOrdersByCustomerPhone(phoneNumber)
+    const orders = await fetchOrdersByCustomerPhone(phoneNumber, req.customerSessionHash)
     res.json({ orders })
   } catch (error) {
     next(error)
@@ -49,7 +49,7 @@ ordersRouter.post('/orders', async (req, res, next) => {
   try {
     validateCreateOrder(req.body)
 
-    const order = await createOrder(req.body)
+    const order = await createOrder(req.body, req.customerSessionHash)
     res.status(201).json({ order })
   } catch (error) {
     next(error)

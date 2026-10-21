@@ -1,5 +1,6 @@
 import { Navigate, Routes, Route } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
+import AdminAccess from './components/AdminAccess'
 import CreateProduct from './pages/CreateProduct'
 import AdminReviews from './pages/AdminReviews'
 import Orders from './pages/Orders'
@@ -10,7 +11,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<UserOrdering />} />
-      <Route element={<AppLayout />}>
+      <Route element={<AdminAccess><AppLayout /></AdminAccess>}>
         <Route path="/admin" element={<Navigate to="/admin/create-product" replace />} />
         <Route path="/admin/create-product" element={<CreateProduct />} />
         <Route path="/admin/reviews" element={<AdminReviews />} />

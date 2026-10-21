@@ -3,7 +3,7 @@ function hasText(value) {
 }
 
 function isPositiveInteger(value) {
-  return Number.isInteger(Number(value)) && Number(value) > 0
+  return Number.isSafeInteger(Number(value)) && Number(value) > 0 && Number(value) <= 100
 }
 
 function isUuid(value) {
@@ -23,6 +23,7 @@ export class OrderValidationError extends Error {
 export const ORDER_STATUSES = ['confirmed', 'preparing', 'shipped', 'delivered', 'cancelled']
 
 export function validateCreateOrder(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new OrderValidationError({ order: 'Invalid order.' })
   const details = {}
 
   if (!hasText(payload.customerName)) {
@@ -71,10 +72,11 @@ export function validateCreateOrder(payload) {
     }
   }
 
-  if (!Array.isArray(payload.items) || payload.items.length === 0) {
+  if (!Array.isArray(payload.items) || payload.items.length === 0 || payload.items.length > 50) {
     details.items = 'At least one order item is required.'
   } else {
     payload.items.forEach((item, index) => {
+      if (!item || typeof item !== 'object') { details[`items.${index}`] = 'Invalid item.'; return }
       const itemType = item.type ?? 'product'
 
       if (!['product', 'combo'].includes(itemType)) {

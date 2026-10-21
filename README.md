@@ -7,7 +7,7 @@ Storefront and administration website for lakshmikaipakkuvam.com.
 - `supabase/migrations/`: Database migrations.
 - `render.yaml`: Free Render web service configuration.
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for setup and outstanding launch requirements. Authentication and real payment integration must be completed before accepting customer orders.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for setup and outstanding launch requirements, and [RAZORPAY_SETUP.md](RAZORPAY_SETUP.md) for the Razorpay checkout integration. Authentication and approved live payment configuration must be completed before accepting customer orders.
 
 ## Local development
 
