@@ -10,7 +10,7 @@ const PAGE_META = {
 
 export default function AppLayout() {
   const { pathname } = useLocation()
-  const meta = PAGE_META[pathname] ?? { title: 'FlowBoard' }
+  const meta = PAGE_META[pathname] ?? { title: 'Lakshmi Kai Pakkuvam' }
 
   return (
     <div className="flex min-h-screen bg-canvas">
