@@ -177,6 +177,10 @@ function normalizePhoneInput(value) {
   return value.replace(/\D/g, '').slice(0, 10)
 }
 
+function normalizeLocationText(value) {
+  return String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ')
+}
+
 function getEstimatedDeliveryCharge(cartItems, orderForm) {
   if (!orderForm.deliveryDistrict.trim() || !orderForm.deliveryState.trim()) {
     return null
