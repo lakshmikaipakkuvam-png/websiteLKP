@@ -11,6 +11,7 @@ import traditionalImageSrc from '../../images/traditional.png'
 import madeWithImageSrc from '../../images/made with.png'
 import founderImageSrc from '../../images/IMG_2566.PNG'
 import indianStatesDistricts from '../data/indian-states-districts.json'
+import { calculateDeliveryCharge, getItemWeightGrams } from '../delivery.js'
 
 const BRAND_LOGO_SRC = '/brand-logo.jpg'
 const API_URL = '/api'
@@ -176,26 +177,19 @@ function normalizePhoneInput(value) {
   return value.replace(/\D/g, '').slice(0, 10)
 }
 
-function normalizeLocationText(value) {
-  return String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ')
-}
-
-function getEstimatedDeliveryCharge(profile, orderForm) {
-  const locationText = normalizeLocationText(`${orderForm.deliveryDistrict} ${orderForm.deliveryState}`)
-
+function getEstimatedDeliveryCharge(cartItems, orderForm) {
   if (!orderForm.deliveryDistrict.trim() || !orderForm.deliveryState.trim()) {
     return null
   }
 
-  if (locationText.includes('chennai') || locationText.includes('madras')) {
-    return Number(profile?.deliveryChennaiAmount ?? 50)
+  try {
+    const totalWeightGrams = cartItems.reduce((total, item) => (
+      total + getItemWeightGrams(item.type === 'combo' ? item.comboOffer : item.product) * item.quantity
+    ), 0)
+    return calculateDeliveryCharge(orderForm, totalWeightGrams)
+  } catch {
+    return null
   }
-
-  if (locationText.includes('bangalore') || locationText.includes('bengaluru')) {
-    return Number(profile?.deliveryBangaloreAmount ?? 70)
-  }
-
-  return Number(profile?.deliveryDefaultAmount ?? 60)
 }
 
 function cartHasPaidDeliveryItems(cartItems) {
@@ -470,7 +464,7 @@ export default function UserOrdering() {
   }, 0)
   const estimatedDeliveryCharge = cartItems.length > 0 && !cartHasPaidDeliveryItems(cartItems)
     ? 0
-    : getEstimatedDeliveryCharge(businessProfile, orderForm)
+    : getEstimatedDeliveryCharge(cartItems, orderForm)
   const estimatedDiscount = getEstimatedDiscount(businessProfile, orderForm, cartTotal)
   const checkoutGrandTotal = Math.max(cartTotal + (estimatedDeliveryCharge ?? 0) - estimatedDiscount.amount, 0)
   const addedCartItem = cartItems.find((item) => getCartItemKey(item) === addedProductId)
@@ -3260,7 +3254,7 @@ export default function UserOrdering() {
                   <h2 className="text-xl font-semibold text-black md:text-2xl">Shipping method</h2>
                   <div className="mt-5 rounded-2xl bg-[#f4f4f4] px-5 py-6 text-base font-medium text-[#69717c]">
                     {estimatedDeliveryCharge === null ? (
-                      <p className="text-center">Enter state and district to view the delivery charge.</p>
+                      <p className="text-center">{orderForm.deliveryState && orderForm.deliveryDistrict ? 'Shipping weight is missing for a product. Please contact the shop before ordering.' : 'Enter state and district to view the delivery charge.'}</p>
                     ) : (
                       <div className="flex items-center justify-between gap-4 text-black">
                         <span>Delivery charge</span>
@@ -3268,6 +3262,7 @@ export default function UserOrdering() {
                       </div>
                     )}
                   </div>
+                  <p className="mt-3 text-sm text-[#69717c]">Chennai district: ₹80 per kg. All other locations: ₹100 per kg. Combined order weight is rounded up to the next kg, with a 1 kg minimum. Free-delivery offers apply.</p>
                 </section>
 
                 <section className="mt-8">

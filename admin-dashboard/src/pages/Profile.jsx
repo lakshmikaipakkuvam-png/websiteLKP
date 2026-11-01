@@ -235,19 +235,10 @@ export default function Profile() {
         <div className="mb-6">
           <h2 className="text-2xl font-extrabold text-ink">Delivery Charges</h2>
           <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted">
-            These charges are applied automatically during checkout using the customer's state and district.
+            Chennai district: ₹80 per kg. All other districts and states: ₹100 per kg.
+            The combined order weight is rounded up to the next whole kg, with a 1 kg minimum.
+            Liquid products use an estimate of 1 ml = 1 gram. Free-delivery offers still apply.
           </p>
-        </div>
-        <div className="grid grid-cols-1 gap-x-10 gap-y-8 sm:grid-cols-3">
-          <Field label="Chennai" required>
-            <input name="deliveryChennaiAmount" type="text" inputMode="numeric" value={profile.deliveryChennaiAmount} onChange={(event) => updateProfileField('deliveryChennaiAmount', event.target.value)} placeholder="50" className={inputClass} />
-          </Field>
-          <Field label="Bangalore" required>
-            <input name="deliveryBangaloreAmount" type="text" inputMode="numeric" value={profile.deliveryBangaloreAmount} onChange={(event) => updateProfileField('deliveryBangaloreAmount', event.target.value)} placeholder="70" className={inputClass} />
-          </Field>
-          <Field label="Other locations" required>
-            <input name="deliveryDefaultAmount" type="text" inputMode="numeric" value={profile.deliveryDefaultAmount} onChange={(event) => updateProfileField('deliveryDefaultAmount', event.target.value)} placeholder="60" className={inputClass} />
-          </Field>
         </div>
       </section>
 

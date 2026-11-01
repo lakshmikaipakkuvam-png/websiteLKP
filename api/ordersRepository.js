@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js'
 import { fetchProfile } from './profileRepository.js'
+import { calculateDeliveryCharge, getItemWeightGrams } from '../admin-dashboard/src/delivery.js'
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : null
@@ -8,28 +9,6 @@ function normalizeText(value) {
 function normalizePhoneNumber(value) {
   const digits = String(value ?? '').replace(/\D/g, '')
   return digits.length > 10 ? digits.slice(-10) : digits
-}
-
-function normalizeLocation(value) {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-}
-
-function calculateDeliveryCharge(profile, payload) {
-  const locationText = normalizeLocation(`${payload.deliveryDistrict ?? ''} ${payload.deliveryState ?? ''}`)
-
-  if (locationText.includes('chennai') || locationText.includes('madras')) {
-    return Number(profile?.deliveryChennaiAmount ?? 50)
-  }
-
-  if (locationText.includes('bangalore') || locationText.includes('bengaluru')) {
-    return Number(profile?.deliveryBangaloreAmount ?? 70)
-  }
-
-  return Number(profile?.deliveryDefaultAmount ?? 60)
 }
 
 function normalizeDiscountCode(value) {
@@ -364,7 +343,20 @@ export async function createOrder(payload, ownerSessionHash) {
   const subtotalAmount = orderItems.reduce((total, item) => total + item.line_total, 0)
   const profile = await fetchProfile()
   const hasPaidDeliveryItems = orderItems.some((item) => !item._free_delivery)
-  const deliveryCharge = hasPaidDeliveryItems ? calculateDeliveryCharge(profile, payload) : 0
+  let totalWeightGrams = 0
+  if (hasPaidDeliveryItems) {
+    try {
+      totalWeightGrams = mergedItems.reduce((total, item) => {
+        const product = item.type === 'combo'
+          ? comboOffersById.get(item.comboOfferId)
+          : productsById.get(item.productId)
+        return total + getItemWeightGrams(product) * item.quantity
+      }, 0)
+    } catch {
+      throw createOrderError('Shipping weight is missing for a product. Please contact the shop before ordering.')
+    }
+  }
+  const deliveryCharge = hasPaidDeliveryItems ? calculateDeliveryCharge(payload, totalWeightGrams) : 0
   const { discountCode, discountAmount } = calculateDiscount(profile, payload, subtotalAmount)
   const grandTotalAmount = Math.max(subtotalAmount + deliveryCharge - discountAmount, 0)
   if (!Number.isSafeInteger(grandTotalAmount) || grandTotalAmount < 1 || grandTotalAmount > 100000) throw createOrderError('Order total must be between Rs. 1 and Rs. 100,000.')
