@@ -23,7 +23,7 @@
     "CORS_ORIGIN": "https://lakshmikaipakkuvam.com,https://www.lakshmikaipakkuvam.com,https://lkp-shop-preview.lakshmikaipakkuvam.workers.dev",
     "ADMIN_EMAIL": "lakshmikaipakkuvam@gmail.com",
     "ADMIN_USER_IDS": "5569f562-3a8f-4a3a-b305-a84a9330f2bc",
-    "LIVE_PAYMENTS_ENABLED": "false"
+    "LIVE_PAYMENTS_ENABLED": "true"
   },
   "durable_objects": {
     "bindings": [{ "name": "ADMIN_SESSIONS", "class_name": "AdminSessions" }]

@@ -1,5 +1,25 @@
 # Cloudflare deployment
 
+## Current deployment
+
+On November 14, 2026 (America/Los_Angeles), the root and `www` business domains
+were attached to the existing Worker `lkp-shop-preview`. The internal Worker name
+does not appear in the customer domain. Live payments are enabled using the
+existing server settings; no new payment keys, database, or product records were
+created. Deployed version: `7324d105-acf2-427a-9ee3-6161473f2c45`.
+
+Both domains passed HTTPS, health, catalog (28 products), and access-control checks.
+The root domain passed the Chrome Buy It Now and shipping checks and the signed
+ignored webhook test. The owner confirmed preview admin login/orders and the
+admin-only Worker payment SDK readiness check. A real captured checkout and large
+upload have not been exercised by these checks.
+
+Razorpay's configured live webhook was still pointing to an `onrender.com` URL at
+cutover. The owner must update the existing webhook URL to
+`https://lakshmikaipakkuvam.com/api/webhooks/razorpay`, retaining its secret and
+events, and keep it enabled. Do not consider payment-event migration complete
+until that dashboard change is confirmed.
+
 The React storefront is served as Workers Static Assets. Only `/api` and `/api/*`
 invoke the Express Worker. The application continues to use the existing Supabase
 database and storage; no database migration or data copy is required.

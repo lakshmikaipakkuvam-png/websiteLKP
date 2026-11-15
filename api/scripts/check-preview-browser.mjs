@@ -6,7 +6,7 @@ try {
   const page = await browser.newPage()
   const errors = []
   page.on('pageerror', (error) => errors.push(error.message))
-  const base = 'https://lkp-shop-preview.lakshmikaipakkuvam.workers.dev'
+  const base = process.argv[2] ?? 'https://lkp-shop-preview.lakshmikaipakkuvam.workers.dev'
   await page.goto(base, { waitUntil: 'networkidle', timeout: 45000 })
   console.log(JSON.stringify({ title: await page.title(), bodyLength: (await page.locator('body').innerText()).length, errors }))
   await page.screenshot({ path: '.wrangler/preview-home.png', fullPage: true })

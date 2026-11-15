@@ -2,7 +2,7 @@
 // No payment orders are created, captured, refunded, or reconciled.
 import assert from 'node:assert/strict'
 import { createHmac } from 'node:crypto'
-const base = 'https://lkp-shop-preview.lakshmikaipakkuvam.workers.dev'
+const base = process.argv[2] ?? 'https://lkp-shop-preview.lakshmikaipakkuvam.workers.dev'
 const response = await fetch('https://api.razorpay.com/v1/orders?count=1', {
   headers: { Authorization: `Basic ${Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64')}` },
   signal: AbortSignal.timeout(15000),
