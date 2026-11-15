@@ -5,12 +5,13 @@ import { createAdminAuth } from './adminAuth.js'
 
 const origin = 'https://shop.example'
 const owner = { id: 'owner-id', email: 'lakshmikaipakkuvam@gmail.com', email_confirmed_at: '2026-01-01' }
-async function fixture(t, overrides = {}) {
+async function fixture(t, overrides = {}, sessions) {
   let time = 0
   let currentUser = owner
   const app = express()
   app.use(express.json())
   const auth = createAdminAuth({
+    sessions,
     env: { NODE_ENV: 'production', CORS_ORIGIN: origin, ADMIN_USER_IDS: owner.id, ...overrides },
     now: () => time,
     identity: {
@@ -40,6 +41,25 @@ test('every sensitive API and unknown route denies anonymous requests', async (t
     ['POST', '/categories'], ['DELETE', '/subcategories/1'], ['POST', '/product-images'],
     ['PATCH', '/orders/1/status'], ['PATCH', '/orders/1/tracking'], ['POST', '/future-sensitive-route'],
   ]) assert.equal((await request(path, { method })).status, 401, `${method} ${path}`)
+})
+
+test('separate server instances share asynchronous sessions and revoke logout everywhere', async (t) => {
+  const records = new Map()
+  const sessions = {
+    get: async (key) => records.get(key),
+    set: async (key, value) => { records.set(key, value) },
+    delete: async (key) => records.delete(key),
+    entries: async () => [...records.entries()],
+    count: async () => records.size,
+  }
+  const first = await fixture(t, {}, sessions)
+  const second = await fixture(t, {}, sessions)
+  const response = await first.login()
+  assert.equal(response.status, 200)
+  const Cookie = response.headers.get('set-cookie').split(';')[0]
+  assert.equal((await second.request('/orders', { headers: { Cookie } })).status, 200)
+  assert.equal((await second.request('/auth/admin/logout', { method: 'POST', headers: { ...second.headers, Cookie } })).status, 200)
+  assert.equal((await first.request('/orders', { headers: { Cookie } })).status, 401)
 })
 test('public catalog and checkout remain accessible', async (t) => {
   const { request } = await fixture(t)

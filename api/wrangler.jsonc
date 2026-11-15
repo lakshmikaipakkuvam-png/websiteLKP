@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lkp-shop-preview",
+  "main": ".wrangler/bundle/worker.js",
+  "no_bundle": true,
+  "build": { "command": "node scripts/build-worker.mjs" },
+  "compatibility_date": "2026-11-14",
+  "compatibility_flags": ["nodejs_compat", "enable_nodejs_http_server_modules"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "lakshmikaipakkuvam.com", "custom_domain": true, "zone_id": "16983e76bb82b3426f22e8ee2675f193" },
+    { "pattern": "www.lakshmikaipakkuvam.com", "custom_domain": true, "zone_id": "16983e76bb82b3426f22e8ee2675f193" }
+  ],
+  "assets": {
+    "directory": "../admin-dashboard/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api", "/api/*"]
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "CORS_ORIGIN": "https://lakshmikaipakkuvam.com,https://www.lakshmikaipakkuvam.com,https://lkp-shop-preview.lakshmikaipakkuvam.workers.dev",
+    "ADMIN_EMAIL": "lakshmikaipakkuvam@gmail.com",
+    "ADMIN_USER_IDS": "5569f562-3a8f-4a3a-b305-a84a9330f2bc",
+    "LIVE_PAYMENTS_ENABLED": "false"
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "ADMIN_SESSIONS", "class_name": "AdminSessions" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AdminSessions"] }],
+  "observability": { "enabled": true }
+}

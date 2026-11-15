@@ -1,0 +1,8 @@
+# Local Worker testing only. Copy to .dev.vars (ignored by Git).
+# Use a test Supabase project and Razorpay test keys for preview checkout testing.
+SUPABASE_URL=https://replace-with-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=replace-with-service-role-key
+RAZORPAY_KEY_ID=rzp_test_replace
+RAZORPAY_KEY_SECRET=replace-with-test-secret
+RAZORPAY_WEBHOOK_SECRET=replace-with-test-webhook-secret
+RAZORPAY_ACCOUNT_ID=replace-with-account-id

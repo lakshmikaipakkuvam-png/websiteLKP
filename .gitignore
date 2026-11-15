@@ -15,3 +15,7 @@
 *.key
 supabase/.temp/
 supabase/.branches/
+**/.wrangler/
+**/.dev.vars
+**/.dev.vars.*
+!**/.dev.vars.example

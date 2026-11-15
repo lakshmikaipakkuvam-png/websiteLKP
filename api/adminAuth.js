@@ -6,9 +6,8 @@ const publicReads = new Set(['/health', '/categories', '/products/public', '/com
 const publicWrites = new Set(['/orders', '/create-order', '/verify-payment', '/payment-status', '/feedback-reviews', '/payments/test-success'])
 const hash = (value) => createHash('sha256').update(value).digest('hex')
 
-export function createAdminAuth({ identity, env = process.env, now = Date.now }) {
+export function createAdminAuth({ identity, env = process.env, now = Date.now, sessions = new Map() }) {
   const router = Router()
-  const sessions = new Map()
   const production = env.NODE_ENV === 'production'
   const cookieName = production ? '__Host-lkp_admin' : 'lkp_admin'
   const cookieOptions = { httpOnly: true, secure: production, sameSite: 'strict', path: '/' }
@@ -31,15 +30,15 @@ export function createAdminAuth({ identity, env = process.env, now = Date.now })
   const requireAdmin = async (req, res, next) => {
     res.set('Cache-Control', 'no-store')
     const key = readSession(req)
-    const session = key && sessions.get(key)
-    if (!session || session.expires <= now()) {
-      if (key) sessions.delete(key)
-      return res.status(401).json({ error: 'Please sign in to the admin dashboard.' })
-    }
     try {
+      const session = key && await sessions.get(key)
+      if (!session || session.expires <= now()) {
+        if (key) await sessions.delete(key)
+        return res.status(401).json({ error: 'Please sign in to the admin dashboard.' })
+      }
       const user = await identity.getUser(session.accessToken)
       if (!allowed(user)) {
-        sessions.delete(key)
+        await sessions.delete(key)
         return res.status(401).json({ error: 'Your admin session has expired.' })
       }
       req.admin = { id: user.id, email: user.email }
@@ -57,13 +56,14 @@ export function createAdminAuth({ identity, env = process.env, now = Date.now })
     try {
       const result = await identity.signIn(req.body.email.trim(), req.body.password)
       if (!result || !allowed(result.user)) return res.status(401).json({ error: 'Email or password was not accepted.' })
-      for (const [key, session] of sessions) if (session.expires <= now()) sessions.delete(key)
-      if (sessions.size >= 100) return res.status(503).json({ error: 'Please try signing in later.' })
+      for (const [key, session] of await sessions.entries()) if (session.expires <= now()) await sessions.delete(key)
+      const sessionCount = typeof sessions.count === 'function' ? await sessions.count() : sessions.size
+      if (sessionCount >= 100) return res.status(503).json({ error: 'Please try signing in later.' })
       const token = randomBytes(32).toString('base64url')
       const lifetime = Math.min(3600, result.expiresIn ?? 3600) * 1000
       const oldKey = readSession(req)
-      if (oldKey) sessions.delete(oldKey)
-      sessions.set(hash(token), { accessToken: result.accessToken, expires: now() + lifetime })
+      if (oldKey) await sessions.delete(oldKey)
+      await sessions.set(hash(token), { accessToken: result.accessToken, expires: now() + lifetime })
       res.cookie(cookieName, token, { ...cookieOptions, maxAge: lifetime })
       res.json({ user: { email: result.user.email } })
     } catch {
@@ -71,11 +71,13 @@ export function createAdminAuth({ identity, env = process.env, now = Date.now })
     }
   })
   router.get('/session', requireAdmin, (req, res) => res.json({ user: req.admin }))
-  router.post('/logout', csrf, (req, res) => {
-    const key = readSession(req)
-    if (key) sessions.delete(key)
-    res.clearCookie(cookieName, cookieOptions)
-    res.json({ success: true })
+  router.post('/logout', csrf, async (req, res, next) => {
+    try {
+      const key = readSession(req)
+      if (key) await sessions.delete(key)
+      res.clearCookie(cookieName, cookieOptions)
+      res.json({ success: true })
+    } catch (error) { next(error) }
   })
   const protectApi = (req, res, next) => {
     // Exact allowlist: new API endpoints require admin authentication by default.
