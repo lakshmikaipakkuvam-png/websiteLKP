@@ -14,11 +14,13 @@ ignored webhook test. The owner confirmed preview admin login/orders and the
 admin-only Worker payment SDK readiness check. A real captured checkout and large
 upload have not been exercised by these checks.
 
-Razorpay's configured live webhook was still pointing to an `onrender.com` URL at
-cutover. The owner must update the existing webhook URL to
-`https://lakshmikaipakkuvam.com/api/webhooks/razorpay`, retaining its secret and
-events, and keep it enabled. Do not consider payment-event migration complete
-until that dashboard change is confirmed.
+After cutover, the owner confirmed updating and enabling the existing Razorpay
+live webhook at `https://lakshmikaipakkuvam.com/api/webhooks/razorpay`, retaining
+its secret and events. Subsequent live-domain checks passed: storefront/admin,
+health, 28-product catalog, anonymous order access denial, read-only gateway
+credential verification, and signed/forged webhook handling. This confirmation
+and synthetic webhook test do not establish that Razorpay has delivered an actual
+captured-payment event; that remains part of a supervised checkout validation.
 
 The React storefront is served as Workers Static Assets. Only `/api` and `/api/*`
 invoke the Express Worker. The application continues to use the existing Supabase
